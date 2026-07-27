@@ -1,0 +1,8 @@
+target/
+.idea/
+*.iml
+*.png
+*.pdf
+HELP.md
+mvnw
+mvnw.cmd
