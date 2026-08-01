@@ -43,7 +43,7 @@ public class CategoryServiceImpl implements CategoryService {
         categoryResponse.setPageSize(categoryPage.getSize());
         categoryResponse.setTotalElements(categoryPage.getTotalElements());
         categoryResponse.setTotalPages(categoryPage.getTotalPages());
-        categoryResponse.setLastPage(categoryResponse.isLastPage());
+        categoryResponse.setLastPage(categoryPage.isLast());
 
         return categoryResponse;
     }
@@ -56,7 +56,7 @@ public class CategoryServiceImpl implements CategoryService {
         if (savedCategory != null)
             throw new APIException(String.format("category with name %s already exists", category.getCategoryName()));
 
-        category.setCategoryId(null);
+        category.setId(null);
         Category createdCategory;
         try {
             createdCategory = categoryRepository.save(category);
