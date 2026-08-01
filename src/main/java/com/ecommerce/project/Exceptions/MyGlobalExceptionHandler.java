@@ -26,7 +26,7 @@ public class MyGlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
-    // NEW: handles bean validation exceptions thrown at the persistence layer (save/persist time)
+    // NEW: handles bean validation exceptions thrown at the persistence layer (save / persist time)
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<Map<String, String>> myConstraintViolationException(ConstraintViolationException e) {
         Map<String, String> response = new HashMap<>();
