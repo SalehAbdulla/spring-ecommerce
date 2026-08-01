@@ -1,8 +1,7 @@
 package com.ecommerce.project.Exceptions;
 
-
-import com.ecommerce.project.config.AppConstants;
 import com.ecommerce.project.payload.APIResponse;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -27,6 +26,18 @@ public class MyGlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
+    // NEW: handles bean validation exceptions thrown at the persistence layer (save/persist time)
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Map<String, String>> myConstraintViolationException(ConstraintViolationException e) {
+        Map<String, String> response = new HashMap<>();
+        e.getConstraintViolations().forEach(violation -> {
+            String fieldName = violation.getPropertyPath().toString();
+            String message = violation.getMessage();
+            response.put(fieldName, message);
+        });
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<APIResponse> myResourceNotFoundException(ResourceNotFoundException e) {
         APIResponse apiResponse = new APIResponse();
@@ -40,6 +51,4 @@ public class MyGlobalExceptionHandler {
         apiResponse.setMessage(e.getMessage());
         return new ResponseEntity<>(apiResponse, HttpStatus.BAD_REQUEST);
     }
-
-
 }
