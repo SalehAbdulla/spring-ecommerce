@@ -24,17 +24,17 @@ public class Product {
 
     @NotNull
     @Positive
-    private double price;
+    private Double price;
 
     @PositiveOrZero
     @Max(100)
-    private double discount;
+    private Double discount;
 
     @Positive
-    private double specialPrice;
+    private Double specialPrice;
 
     @Min(0)
-    private int quantity;
+    private Integer quantity;
 
     @Size(max = 255)
     private String image;
