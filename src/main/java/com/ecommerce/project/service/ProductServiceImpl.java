@@ -1,5 +1,6 @@
 package com.ecommerce.project.service;
 
+import com.ecommerce.project.Exceptions.APIException;
 import com.ecommerce.project.Exceptions.ResourceNotFoundException;
 import com.ecommerce.project.model.Category;
 import com.ecommerce.project.model.Product;
@@ -26,6 +27,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Autowired
     private CategoryRepository categoryRepository;
+
     @Autowired
     private ModelMapper modelMapper;
 
@@ -34,6 +36,10 @@ public class ProductServiceImpl implements ProductService {
         // First check if the category is actually exists
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category Id not found", "categoryId", "categoryId"));
+
+        // Check if the there's same product name
+        Product savedProductWithTheSameName = productRepository.findByNameLikeIgnoreCase(productDTO.getName());
+        if (savedProductWithTheSameName != null) throw new APIException("product name already exists");
 
         double discountAmount = (productDTO.getDiscount() / 100) * productDTO.getPrice();
         double specialPrice   = productDTO.getPrice() - discountAmount;
@@ -86,7 +92,7 @@ public class ProductServiceImpl implements ProductService {
         Sort sortByAndOrder = sortOrder.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(pageNumber, pageSize, sortByAndOrder); // pageSize and pageNumber must not be negative
 
-        Page<Product> productPage = productRepository.findByCategoryId(categoryId, pageable);
+        Page<Product> productPage = productRepository.findByCategoryOrderByPriceAsc(category, pageable);
         List<ProductDTO> productDTOS = productPage.stream()
                 .map(product -> modelMapper.map(product, ProductDTO.class))
                 .toList();
@@ -100,5 +106,61 @@ public class ProductServiceImpl implements ProductService {
         productResponse.setLastPage(productPage.isLast());
 
         return productResponse;
+    }
+
+    @Override
+    public ProductResponse searchProductsByKeyword(String keyword, Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
+
+        Sort sortByAndOrder = sortOrder.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, sortByAndOrder); // pageSize and pageNumber must not be negative
+
+        Page<Product> productPage = productRepository.findByNameLikeIgnoreCase('%'+keyword+'%', pageable);
+        List<ProductDTO> productDTOS = productPage.stream()
+                .map(product -> modelMapper.map(product, ProductDTO.class))
+                .toList();
+
+        ProductResponse productResponse = new ProductResponse();
+        productResponse.setContent(productDTOS);
+        productResponse.setPageNumber(productPage.getNumber());
+        productResponse.setPageSize(productPage.getSize());
+        productResponse.setTotalElements(productPage.getTotalElements());
+        productResponse.setTotalPages(productPage.getTotalPages());
+        productResponse.setLastPage(productPage.isLast());
+
+        return productResponse;
+    }
+
+    @Override
+    public ProductDTO updateProduct(Long productId, ProductDTO productDTO) {
+        // Get Product
+        Product savedProduct = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
+
+        // Update
+        savedProduct.setName(productDTO.getName());
+        savedProduct.setImage(productDTO.getImage());
+        savedProduct.setQuantity(productDTO.getQuantity());
+        savedProduct.setPrice(productDTO.getPrice());
+        savedProduct.setDiscount(productDTO.getDiscount());
+        savedProduct.setDescription(productDTO.getDescription());
+
+        // Save
+        Product updatedProduct = productRepository.save(savedProduct);
+
+        return modelMapper.map(updatedProduct, ProductDTO.class);
+    }
+
+    @Override
+    public ProductDTO deleteProduct(Long productId) {
+        // check
+        Product savedProduct = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
+
+        // delete
+        productRepository.delete(savedProduct);
+        // return
+
+
+        return modelMapper.map(savedProduct, ProductDTO.class);
     }
 }
