@@ -1,14 +1,20 @@
 package com.ecommerce.project.controller;
 
+import com.ecommerce.project.Exceptions.APIException;
 import com.ecommerce.project.config.AppConstants;
 import com.ecommerce.project.payload.ProductDTO;
 import com.ecommerce.project.payload.ProductResponse;
 import com.ecommerce.project.service.ProductService;
 import jakarta.validation.Valid;
+import org.apache.tomcat.util.http.fileupload.FileUpload;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.FileInputStream;
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api")
@@ -53,7 +59,7 @@ public class ProductController {
         return new ResponseEntity<>(productService.searchProductsByKeyword(keyword, pageNumber, pageSize, sortBy, sortOrder), HttpStatus.FOUND);
     }
 
-    @PutMapping("/admin/products/{productId}")
+    @PatchMapping("/admin/products/{productId}")
     public ResponseEntity<ProductDTO> updateProduct(@PathVariable Long productId, @RequestBody ProductDTO productDTO){
         return new ResponseEntity<>(productService.updateProduct(productId, productDTO), HttpStatus.OK);
     }
@@ -63,6 +69,15 @@ public class ProductController {
         return new ResponseEntity<>(productService.deleteProduct(productId), HttpStatus.OK);
     }
 
+    @PatchMapping("/admin/products/updateImage/{productId}")
+    public ResponseEntity<ProductDTO> updateProductImage(@PathVariable Long productId,
+                                                         @RequestParam("image") MultipartFile multipartFile) {
+        try {
+            return new ResponseEntity<>(productService.updateProductImage(productId, multipartFile), HttpStatus.OK);
+        } catch (IOException e) {
+            throw new APIException(e.getMessage());
+        }
+    }
 
 
 }
