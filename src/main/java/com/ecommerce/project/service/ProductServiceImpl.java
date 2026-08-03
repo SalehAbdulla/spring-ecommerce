@@ -9,6 +9,8 @@ import com.ecommerce.project.payload.ProductDTO;
 import com.ecommerce.project.payload.ProductResponse;
 import com.ecommerce.project.repositories.CategoryRepository;
 import com.ecommerce.project.repositories.ProductRepository;
+import org.apache.tika.Tika;
+import org.apache.tika.config.TikaActivator;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -16,8 +18,18 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.UUID;
+
+import static com.ecommerce.project.config.AppConstants.ALLOWED_TYPES;
+import static com.ecommerce.project.config.AppConstants.MAX_IMAGE_SIZE;
 
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -30,6 +42,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Autowired
     private ModelMapper modelMapper;
+
+    @Autowired
+    private FileServiceImpl fileService;
 
     @Override
     public ProductDTO addProduct(Long categoryId, ProductDTO productDTO) {
@@ -135,15 +150,14 @@ public class ProductServiceImpl implements ProductService {
         // Get Product
         Product savedProduct = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
-
         // Update
         savedProduct.setName(productDTO.getName());
-        savedProduct.setImage(productDTO.getImage());
+//        savedProduct.setImage(productDTO.getImage()); should have a separate endpoint
         savedProduct.setQuantity(productDTO.getQuantity());
         savedProduct.setPrice(productDTO.getPrice());
         savedProduct.setDiscount(productDTO.getDiscount());
         savedProduct.setDescription(productDTO.getDescription());
-
+        savedProduct.setSpecialPrice(productDTO.getSpecialPrice());
         // Save
         Product updatedProduct = productRepository.save(savedProduct);
 
@@ -152,15 +166,29 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductDTO deleteProduct(Long productId) {
-        // check
         Product savedProduct = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
-
-        // delete
         productRepository.delete(savedProduct);
-        // return
-
-
         return modelMapper.map(savedProduct, ProductDTO.class);
     }
+
+    @Override
+    public ProductDTO updateProductImage(Long productId, MultipartFile multipartFile) throws IOException {
+
+       Product product =  productRepository.findById(productId)
+               .orElseThrow(() -> new ResourceNotFoundException("product", "productId", productId));
+
+        // upload image to the server
+        // Get the file name of uploaded image
+        String path = "images/";
+        String filename = fileService.uploadImage(path, multipartFile);
+        // Updating the new file name to the product
+        product.setImage(filename);
+        // return DTO after mapping product to DTO
+
+        return modelMapper.map(product, ProductDTO.class);
+    }
+
+
+
 }
